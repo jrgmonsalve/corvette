@@ -6,48 +6,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/joho/godotenv"
 )
-
-func main() {
-
-	flag.Parse()
-	rootPath := flag.Arg(0)
-	if rootPath == "" {
-		fmt.Println("Debe proporcionar una ruta de inicio.")
-		os.Exit(1)
-	}
-
-	var wg sync.WaitGroup
-	rootPath = rootPath + "/maildir"
-	entries, err := os.ReadDir(rootPath)
-	if err != nil {
-		fmt.Printf("Error al leer el directorio: %v\n", err)
-		return
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			wg.Add(1)
-			go func(p string) {
-				defer wg.Done()
-				processDirectory(p)
-			}(rootPath + "/" + entry.Name())
-		}
-	}
-
-	if err != nil {
-		fmt.Printf("Error al leer la ruta: %v\n", err)
-		os.Exit(1)
-	}
-
-	wg.Wait()
-}
 
 type EmailData struct {
 	Subject string `json:"subject"`
@@ -56,34 +24,75 @@ type EmailData struct {
 	Body    string `json:"body"`
 }
 
-func processDirectory(path string) {
-	fmt.Printf("Procesando directorio: %s\n", path)
+func main() {
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		fmt.Println("Error loading .env:", err)
+		return
+	}
+
+	flag.Parse()
+	rootPath := flag.Arg(0)
+	if rootPath == "" {
+		log.Println("You must specify the path.")
+		os.Exit(1)
+	}
+
+	var wg sync.WaitGroup
+	rootPath = rootPath + "/maildir"
+
+	entries, err := os.ReadDir(rootPath)
+	if err != nil {
+		log.Printf("Fail to read directory: %v\n", err)
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			wg.Add(1)
+			fullPath := filepath.Join(rootPath, entry.Name())
+			go processDirectory(fullPath, &wg)
+		}
+	}
+
+	wg.Wait()
+}
+
+func processDirectory(path string, wg *sync.WaitGroup) {
+	log.Printf("Processing directory: %s\n", path)
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		fmt.Printf("Error al leer el directorio: %v\n", err)
+		log.Printf("Fail to read directory: %v\n", err)
 		return
 	}
 
 	for _, entry := range entries {
 		if !entry.IsDir() {
-			filePath := filepath.Join(path, entry.Name())
-			fileContent, err := os.ReadFile(filePath)
+			fullFilePath := filepath.Join(path, entry.Name())
+			log.Println("Processing file: ", fullFilePath)
+			fileContent, err := os.ReadFile(fullFilePath)
 			if err != nil {
-				fmt.Printf("Error al leer el archivo: %v\n", err)
+				log.Printf("Fail to read file: %v\n", err)
 				continue
 			}
 			emailData := parseEmailData(string(fileContent))
 			jsonData, err := json.MarshalIndent(emailData, "", "    ")
 			if err != nil {
-				fmt.Println("Error al convertir a JSON:", err)
+				log.Println("Error marshaling JSON:", err)
 				return
 			}
-			sendToZincSearch(jsonData)
+			err = sendToZincSearch(jsonData)
+			//TODO: retry depending on error
+			if err != nil {
+				log.Println("Error sending data to ZincSearch:", err)
+				return
+			}
 		} else {
-			processDirectory(filepath.Join(path, entry.Name()))
+			processDirectory(filepath.Join(path, entry.Name()), wg)
 		}
 	}
+	wg.Done()
 }
 
 func parseEmailData(content string) EmailData {
@@ -126,16 +135,18 @@ func findValue(re *regexp.Regexp, content string) string {
 	return ""
 }
 
-const zincURL = "http://localhost:4080/api/emails/_doc"
-
 func sendToZincSearch(jsonData []byte) error {
-	req, err := http.NewRequest("POST", zincURL, bytes.NewBuffer(jsonData))
+	apiURL := os.Getenv("API_URL")
+	apiUser := os.Getenv("API_USER")
+	apiPassword := os.Getenv("API_PASSWORD")
+
+	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Basic "+basicAuth("", ""))
+	req.Header.Set("Authorization", "Basic "+basicAuth(apiUser, apiPassword))
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -143,9 +154,9 @@ func sendToZincSearch(jsonData []byte) error {
 		return err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ZincSearch respondió con código de estado: %d", resp.StatusCode)
+
+		return fmt.Errorf("fail to send data. unexpected status code: %d", resp.StatusCode)
 	}
 
 	return nil
