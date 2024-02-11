@@ -38,7 +38,7 @@ func main() {
 		log.Println("You must specify the path.")
 		os.Exit(1)
 	}
-
+	c := make(chan int, 5)
 	var wg sync.WaitGroup
 	rootPath = rootPath + "/maildir"
 
@@ -49,18 +49,19 @@ func main() {
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
+			c <- 1
 			wg.Add(1)
 			fullPath := filepath.Join(rootPath, entry.Name())
-			go processDirectory(fullPath, &wg)
+			go processDirectory(fullPath, &wg, c)
 		}
 	}
 
 	wg.Wait()
 }
 
-func processDirectory(path string, wg *sync.WaitGroup) {
+func processDirectory(path string, wg *sync.WaitGroup, c chan int) {
 	log.Printf("Processing directory: %s\n", path)
-
+	defer wg.Done()
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		log.Printf("Fail to read directory: %v\n", err)
@@ -89,10 +90,10 @@ func processDirectory(path string, wg *sync.WaitGroup) {
 				return
 			}
 		} else {
-			processDirectory(filepath.Join(path, entry.Name()), wg)
+			processDirectory(filepath.Join(path, entry.Name()), wg, c)
 		}
 	}
-	wg.Done()
+	<-c
 }
 
 func parseEmailData(content string) EmailData {
