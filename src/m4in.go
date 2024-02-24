@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-func main() {
+func m4in() {
 	// Crear archivo de perfil de CPU
 	f, err := os.Create("cpu.prof")
 	if err != nil {

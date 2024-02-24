@@ -1,4 +1,4 @@
-module github.com/jrgmonsalve/corvette/src
+module github.com/jrgmonsalve/corvette/cmd/cli
 
 go 1.21.6
 
