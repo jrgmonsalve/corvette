@@ -1,6 +1,8 @@
 package application
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type EmailRecolector struct {
 }
@@ -10,6 +12,12 @@ func NewEmailRecolector() *EmailRecolector {
 }
 
 func (er *EmailRecolector) Collect() error {
-	fmt.Println("Collecting emails")
+	fmt.Println("Start Collecting emails")
+	for i := 0; i < 1000; i++ {
+		if i%100 == 0 {
+			fmt.Println("Collecting email ", i)
+		}
+	}
+	fmt.Println("End Collecting emails")
 	return nil
 }

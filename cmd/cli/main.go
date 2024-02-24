@@ -7,12 +7,13 @@ import (
 
 func main() {
 
-	performance.StartRecord()
+	stopCPUProfile := performance.StartCPUProfile("cpu_profile.prof")
+	defer stopCPUProfile()
 
 	recolector := application.NewEmailRecolector()
 	indexer := application.NewIndexer(recolector)
 	indexer.Start()
 
-	performance.StopRecord()
+	performance.WriteMemProfile("mem_profile.prof")
 
 }

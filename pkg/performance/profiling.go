@@ -1,40 +1,34 @@
 package performance
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"os/signal"
+	"runtime"
 	"runtime/pprof"
-	"syscall"
 )
 
-func StartRecord() {
-	// Crear archivo de perfil de CPU
-	f, err := os.Create("cpu.prof")
+func StartCPUProfile(filename string) func() {
+	cpuFile, err := os.Create(filename)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("could not create CPU profile: ", err)
 	}
-	defer f.Close()
-
-	// Iniciar perfilado de CPU
-	if err := pprof.StartCPUProfile(f); err != nil {
-		log.Fatal("Error starting CPU profile: ", err)
+	if err := pprof.StartCPUProfile(cpuFile); err != nil {
+		log.Fatal("could not start CPU profile: ", err)
 	}
-
-	// Preparar manejo de señal de interrupción (Ctrl+C)
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-	// Usar una goroutine para manejar la señal
-	go func() {
-		<-c
-		fmt.Println("\nCtrl+C pressed. Stopping CPU profile and exiting...")
-		pprof.StopCPUProfile() // Detener el perfilado de CPU
-		os.Exit(0)
-	}()
+	return func() {
+		pprof.StopCPUProfile()
+		cpuFile.Close()
+	}
 }
 
-func StopRecord() {
-	pprof.StopCPUProfile()
+func WriteMemProfile(filename string) {
+	memFile, err := os.Create(filename)
+	if err != nil {
+		log.Fatal("could not create memory profile: ", err)
+	}
+	defer memFile.Close()
+	runtime.GC() // recolect the garbage to get up-to-date statistics
+	if err := pprof.WriteHeapProfile(memFile); err != nil {
+		log.Fatal("could not write memory profile: ", err)
+	}
 }
