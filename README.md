@@ -36,8 +36,13 @@ https://zincsearch-docs.zinc.dev/quickstart/
 aditional download the file https://github.com/zincsearch/zincsearch/blob/main/.env.sample and rename to .env
 
 
+## how to run script
+> go run .\cmd\cli\ C:\projects\truora\enron_mail_20110402\maildir
+
 ## how generate cpu and mem graphs
 
 > go tool pprof -svg cpu_profile.prof > cpu_profile.svg
 
 > go tool pprof -svg mem_profile.prof > mem_profile.svg
+
+

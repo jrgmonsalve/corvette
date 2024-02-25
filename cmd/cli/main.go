@@ -10,8 +10,10 @@ func main() {
 	stopCPUProfile := performance.StartCPUProfile("cpu_profile.prof")
 	defer stopCPUProfile()
 
-	recolector := application.NewEmailRecolector()
-	indexer := application.NewIndexer(recolector)
+	recolector := application.NewEmailFileRecolector()
+	uploader := application.NewZincSearchUploader()
+	indexer := application.NewIndexer(recolector, uploader)
+
 	indexer.Start()
 
 	performance.WriteMemProfile("mem_profile.prof")

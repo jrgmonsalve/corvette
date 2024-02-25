@@ -1,13 +1,23 @@
 package application
 
+import "fmt"
+
 type Indexer struct {
 	recolector Recolector
+	uploader   Uploader
 }
 
-func NewIndexer(recolector Recolector) *Indexer {
-	return &Indexer{recolector: recolector}
+func NewIndexer(recolector Recolector, uploader Uploader) *Indexer {
+	return &Indexer{
+		recolector: recolector,
+		uploader:   uploader,
+	}
 }
 
 func (i *Indexer) Start() {
-	i.recolector.Collect()
+	err := i.recolector.Collect()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
