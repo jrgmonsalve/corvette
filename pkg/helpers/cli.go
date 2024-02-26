@@ -5,7 +5,7 @@ import (
 	"flag"
 )
 
-func GetCommandLineArgument(error_message string) (string, error) {
+func GetArgumentFromCLI(error_message string) (string, error) {
 	flag.Parse()
 	argument := flag.Arg(0)
 	if argument == "" {
