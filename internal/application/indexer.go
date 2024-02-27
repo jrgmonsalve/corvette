@@ -22,7 +22,7 @@ func NewIndexer(collector domain.Collector, emailRepository domain.EmailReposito
 
 func (i *Indexer) Start() {
 	batchSize := helpers.GetIntValueFromEnv("BATCH_SIZE", 10)
-	emailChan := make(chan domain.Email, 4)
+	emailChan := make(chan domain.Email, 1)
 	var wg sync.WaitGroup
 
 	wg.Add(1)

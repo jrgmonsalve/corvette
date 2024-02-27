@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jrgmonsalve/corvette/cmd/cli/internal/domain"
+	model_zincsearch "github.com/jrgmonsalve/corvette/cmd/cli/internal/infrastructure/models/zincsearch"
 )
 
 type ZincSearchService struct {
@@ -22,14 +23,18 @@ func NewZincSearchService() *ZincSearchService {
 
 func (zss *ZincSearchService) CreateBulk(emails []domain.Email) error {
 	fmt.Println("Sending Creating bulk")
+	fmt.Println("Emails:", len(emails))
 	time.Sleep(2 * time.Second)
-	return nil
-}
 
-func insertDocument(apiURL string, jsonData []byte) {
+	emailBulkRequest := model_zincsearch.EmailBulkRequest{
+		IndexName: os.Getenv("INDEX_NAME"),
+		Records:   emails,
+	}
+	jsonData := emailBulkRequest.MappingToJson()
 
 	apiUser := os.Getenv("API_USER")
 	apiPassword := os.Getenv("API_PASSWORD")
+	apiURL := os.Getenv("API_URL") + "_bulkv2"
 
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -54,6 +59,7 @@ func insertDocument(apiURL string, jsonData []byte) {
 	}
 	senconds, _ := strconv.Atoi(os.Getenv("SECONDS_TO_SLEEP_BETWEEN_REQUEST"))
 	time.Sleep(time.Duration(senconds) * time.Second)
+	return nil
 }
 
 func basicAuth(username, password string) string {

@@ -46,3 +46,5 @@ aditional download the file https://github.com/zincsearch/zincsearch/blob/main/.
 > go tool pprof -svg mem_profile.prof > mem_profile.svg
 
 
+## mejoras
+1. que si se detiene por alguna razon el proceso, pregunte si desea comenzar de nuevo o retomar donde se quedo
