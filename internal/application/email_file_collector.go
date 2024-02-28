@@ -31,7 +31,7 @@ func (efr *EmailFileCollector) Collect(emailChannel chan<- domain.Email, wg *syn
 	if err != nil {
 		return err
 	}
-
+	defer close(emailChannel)
 	return nil
 }
 
@@ -69,6 +69,6 @@ func (efr *EmailFileCollector) recursiveFileReader(path string, currentDepth, ma
 
 		}
 	}
-	close(emailChannel)
+
 	return nil
 }

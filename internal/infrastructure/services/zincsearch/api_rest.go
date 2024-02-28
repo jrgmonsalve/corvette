@@ -24,7 +24,6 @@ func NewZincSearchService() *ZincSearchService {
 func (zss *ZincSearchService) CreateBulk(emails []domain.Email) error {
 	fmt.Println("Sending Creating bulk")
 	fmt.Println("Emails:", len(emails))
-	time.Sleep(2 * time.Second)
 
 	emailBulkRequest := model_zincsearch.EmailBulkRequest{
 		IndexName: os.Getenv("INDEX_NAME"),
@@ -34,7 +33,7 @@ func (zss *ZincSearchService) CreateBulk(emails []domain.Email) error {
 
 	apiUser := os.Getenv("API_USER")
 	apiPassword := os.Getenv("API_PASSWORD")
-	apiURL := os.Getenv("API_URL") + "_bulkv2"
+	apiURL := os.Getenv("API_URL") + "/_bulkv2"
 
 	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
